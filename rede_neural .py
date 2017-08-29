@@ -6,6 +6,8 @@ from pybrain.datasets import SupervisedDataSet
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain.supervised import BackpropTrainer
 from datetime import datetime
+from pybrain.tools.shortcuts import buildNetwork
+import pickle
 
 #['STUDENTID', 'SCORE', 'GRADE', 'ASKS_QUESTIONS', 'LEAVES_EARLY', 'PARTICIPATION']
 
@@ -17,7 +19,76 @@ tf = open('M2017_train.csv', 'r')
 
 st_grade = {}
 lines = tf.readlines()
+
+
+def testing_cases():
+	resultado = open('resultado.txt','r')
+	net = pickle.load(resultado)
 	
+	cases = open('M2017_test_students.csv', 'r')
+	lines = cases.readlines()
+	
+	for i in range(1, len(lines)):
+		data = [x for x in lines[i].strip().split(',') if x != '']
+		
+		studentId = data[0]
+		score = float(data[1])
+		ask_questions = data[2]
+		leaves_early = data[3]
+		participation = float(data[4])
+		
+		resultados_teste = open("resultado_teste.txt", "a")
+		
+		
+		saida = ""
+		
+		
+		saida += "==================\n"
+
+		saida += "ID do aluno: " + str(studentId) + "\n"
+		saida +=  "Score: " + str(score) + "\n"
+		saida += "Frequencia com que o aluno faz perguntas: " + ask_questions + "\n"
+		saida += "Frequencia com que o aluno sai da aula cedo: " + leaves_early + "\n"
+		saida += "Participacao do aluno: " +  str(participation) + "\n"
+		
+		if ask_questions == 'always':
+			ask_questions = 0.9
+		elif ask_questions == 'sometimes':
+			ask_questions = 0.4
+		elif ask_questions == 'never':
+			ask_questions = 0.1
+			
+		if leaves_early == 'never':
+			leaves_early = 0.9
+		elif leaves_early == 'rarely':
+			leaves_early = 0.4
+		elif leaves_early == 'always':
+			leaves_early = 0.1
+		
+		myGrade = float(net.activate((score, ask_questions, leaves_early, participation))[0])
+		
+		
+		if(myGrade <= 0.2):
+			myGrade = 'F'
+		elif(myGrade <= 0.4):
+			myGrade = 'D'
+		elif(myGrade <= 0.6):
+			myGrade = 'C'
+		elif(myGrade <= 0.8):
+			myGrade = 'B'
+		else:
+			myGrade = 'A'
+		
+		
+
+		saida += "Previsao de nota do aluno: " + myGrade + "\n"
+		
+		resultados_teste.write(saida)
+
+
+testing_cases()
+
+'''	
 for i in range(1, len(lines)):
 	data = [x for x in lines[i].strip().split(',') if x != '']
 	
@@ -65,18 +136,30 @@ for i in range(1, len(lines)):
 	
 	
 nn = buildNetwork(4, 4, 1, bias=True)
+momentum = 0.2
+lrdecay =1.0
+learning_rate = 0.01
 
-trainer = BackpropTrainer(nn, dataset)
+trainer = BackpropTrainer(nn, dataset, learning_rate, lrdecay, momentum)
 
-for i in xrange(1000):
+for i in xrange(3000):
 	print (trainer.train())
-	
-	
-testf = open('M2017_test_students.csv', 'r')
 
+
+resultado = open('resultado.txt', 'w')
+pickle.dump(nn, resultado)
+
+resultado.close()
+
+
+'''
+
+
+'''
 line_index = 0
 total = 0
 acertos = 0
+
 
 for i in range(589, 840):
 	testData = [x for x in lines[i].strip().split(',') if x != '']
@@ -126,4 +209,5 @@ perc_acertos = (acertos * 100.0) / total
 
 
 print("Porcentagem de Acertos: ", perc_acertos)
+'''
 
